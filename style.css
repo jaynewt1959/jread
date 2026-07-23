@@ -103,6 +103,21 @@ main {
   display: flex;
   gap: 20px;
   flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+/* Right-hand column: note selectors on top, hint cards below */
+.notes-and-hints {
+  flex: 2 1 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.note-selectors-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
 .selector-group {
@@ -332,7 +347,6 @@ button {
 .hint-row {
   display: flex;
   gap: 10px;
-  margin-top: 14px;
   flex-wrap: wrap;
 }
 
