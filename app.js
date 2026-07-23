@@ -600,3 +600,12 @@ buildIntervalButtons();
 buildNoteButtons();
 updateStatus();
 renderStats();
+
+// Restore stats panel open/closed preference (default: closed)
+const statsPanel = document.getElementById('stats-panel');
+if (localStorage.getItem('jread_stats_open') === 'true') {
+  statsPanel.setAttribute('open', '');
+}
+statsPanel.addEventListener('toggle', () => {
+  localStorage.setItem('jread_stats_open', statsPanel.open ? 'true' : 'false');
+});

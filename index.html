@@ -116,17 +116,18 @@
       <div id="keyboard"></div>
     </section>
 
-    <!-- ── Progress dashboard ───────────────────────────────────────── -->
-    <section class="card stats-card">
-      <div class="stats-hd">
-        <h2 class="stats-title">Progress</h2>
-        <div class="stats-overall" id="stats-overall">No answers yet</div>
-      </div>
+    <!-- ── Progress dashboard (collapsible) ───────────────────────────── -->
+    <details class="card stats-card" id="stats-panel">
+      <summary class="stats-summary">
+        <span class="stats-title">Progress</span>
+        <span class="stats-overall" id="stats-overall">No answers yet</span>
+        <span class="stats-chevron" aria-hidden="true">▾</span>
+      </summary>
       <!-- Stage trail: visual 5-step progress indicator -->
       <div class="stats-trail" id="stats-trail"></div>
-      <!-- Per-stage interval breakdown -->
+      <!-- Per-stage interval breakdown (scrollable) -->
       <div class="stats-body" id="stats-body"></div>
-    </section>
+    </details>
 
   </main>
 
