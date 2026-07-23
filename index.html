@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>jread — Interval Recognition</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- VexFlow 5 from CDN (same source as vexflow-sandbox) -->
+  <script src="https://cdn.jsdelivr.net/npm/vexflow@5/build/cjs/vexflow.js"></script>
+</head>
+<body>
+
+  <header>
+    <h1>jread <span>interval recognition</span></h1>
+    <div id="controls">
+      <button id="btn-start-stop" class="btn-start">Start</button>
+      <button id="btn-reset" class="btn-reset">Reset Progress</button>
+      <div id="stage-badge">Stage 1 / 5</div>
+      <div id="accuracy">Accuracy: —</div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ── Grand staff ─────────────────────────────────────────────────── -->
+    <section class="card staff-card">
+      <div id="staff-placeholder" class="placeholder-msg">
+        Press <strong>Start</strong> to begin the exercise
+      </div>
+      <div id="grand-staff"></div>
+    </section>
+
+    <!-- ── Answer panel (hidden until running) ────────────────────────── -->
+    <div id="answer-panel" class="card answer-panel hidden">
+
+      <div class="selectors-row">
+
+        <div class="selector-group">
+          <div class="selector-label">Interval</div>
+          <div id="interval-buttons" class="button-grid"></div>
+        </div>
+
+        <div class="selector-group">
+          <div class="selector-label">Bottom Note</div>
+          <div id="bottom-buttons" class="button-grid"></div>
+        </div>
+
+        <div class="selector-group">
+          <div class="selector-label">Top Note</div>
+          <div id="top-buttons" class="button-grid"></div>
+        </div>
+
+      </div>
+
+      <div class="action-bar">
+        <button id="btn-check" class="btn-check" disabled>Check</button>
+        <button id="btn-next"  class="btn-next hidden">Next →</button>
+        <div id="feedback"></div>
+      </div>
+
+    </div>
+
+    <!-- ── Virtual piano keyboard (C4 – B5, visual reference only) ───── -->
+    <section class="card keyboard-card">
+      <div class="keyboard-label">C4 – B5 &nbsp;(reference)</div>
+      <div id="keyboard"></div>
+    </section>
+
+  </main>
+
+  <!-- Load order matters: curriculum → GrandStaff → progress → exercise → app -->
+  <script src="curriculum.js"></script>
+  <script src="GrandStaff.js"></script>
+  <script src="progress.js"></script>
+  <script src="exercise.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>

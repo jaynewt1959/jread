@@ -1,0 +1,277 @@
+/* style.css — jread interval recognition app */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f0f2f5;
+  color: #111827;
+  min-height: 100vh;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 28px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+}
+
+header h1 {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: #111827;
+}
+
+header h1 span {
+  font-weight: 300;
+  color: #6b7280;
+  font-size: 14px;
+  margin-left: 8px;
+}
+
+#controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+#stage-badge {
+  background: #ede9fe;
+  color: #5b21b6;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+#accuracy {
+  font-size: 13px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+/* ── Main layout ─────────────────────────────────────────────────────────── */
+
+main {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Card base ───────────────────────────────────────────────────────────── */
+
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 22px 28px;
+}
+
+/* ── Staff section ───────────────────────────────────────────────────────── */
+
+.staff-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 160px;
+  justify-content: center;
+}
+
+.placeholder-msg {
+  color: #9ca3af;
+  font-size: 15px;
+  padding: 40px 0;
+}
+
+/* ── Answer panel ────────────────────────────────────────────────────────── */
+
+.answer-panel.hidden { display: none; }
+
+.selectors-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.selector-group {
+  flex: 1 1 180px;
+}
+
+.selector-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+  margin-bottom: 8px;
+}
+
+.button-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ── Buttons — shared ────────────────────────────────────────────────────── */
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  transition: background 0.12s, color 0.12s, border-color 0.12s, opacity 0.12s;
+}
+
+/* Control buttons (header) */
+.btn-start {
+  background: #3b82f6;
+  color: #fff;
+  padding: 9px 20px;
+  font-size: 14px;
+}
+.btn-start:hover { background: #2563eb; }
+
+.btn-reset {
+  background: #fee2e2;
+  color: #b91c1c;
+  padding: 9px 16px;
+  font-size: 13px;
+}
+.btn-reset:hover { background: #fecaca; }
+
+/* Answer buttons */
+.ans-btn {
+  background: #f9fafb;
+  color: #374151;
+  border: 1.5px solid #d1d5db;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.ans-btn:hover:not(:disabled) {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+.ans-btn.selected {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #3b82f6;
+}
+.ans-btn.locked {
+  opacity: 0.28;
+  cursor: default;
+}
+.ans-btn:disabled:not(.locked) {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.interval-btn { min-width: 112px; text-align: center; }
+.note-btn     { min-width: 38px;  text-align: center; font-weight: 600; }
+
+/* ── Action bar ──────────────────────────────────────────────────────────── */
+
+.action-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.btn-check {
+  background: #3b82f6;
+  color: #fff;
+  padding: 10px 26px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.btn-check:not(:disabled):hover { background: #2563eb; }
+.btn-check:disabled {
+  background: #bfdbfe;
+  color: #fff;
+  cursor: default;
+}
+
+.btn-next {
+  background: #10b981;
+  color: #fff;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.btn-next:hover { background: #059669; }
+.btn-next.hidden { display: none; }
+
+#feedback {
+  font-size: 14px;
+  font-weight: 500;
+  flex: 1 1 160px;
+}
+.feedback-correct { color: #16a34a; }
+.feedback-wrong   { color: #dc2626; }
+
+/* ── Piano keyboard ──────────────────────────────────────────────────────── */
+
+.keyboard-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.keyboard-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+  align-self: flex-start;
+}
+
+#keyboard { position: relative; }
+
+.key {
+  position: absolute;
+  border-radius: 0 0 5px 5px;
+  top: 0;
+}
+
+.white-key {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  width: 31px;        /* 32px slot − 1px so adjacent keys share a hair gap */
+  height: 92px;
+  z-index: 1;
+}
+
+.black-key {
+  background: #1f2937;
+  border: 1px solid #111827;
+  width: 20px;
+  height: 58px;
+  z-index: 2;
+}
+
+.key-active {
+  background: #3b82f6 !important;
+  border-color: #1d4ed8 !important;
+}
