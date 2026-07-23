@@ -52,6 +52,45 @@
 
       </div>
 
+      <!-- ── Odd / Even visual reminder ─────────────────────────────────── -->
+      <div class="hint-row">
+
+        <!-- ODD: both notes on same position type (both lines or both spaces) -->
+        <div class="hint-card hint-odd">
+          <div class="hint-header">Odd &thinsp;&middot;&thinsp; 3rd &middot; 5th &middot; 7th</div>
+          <!-- Staff lines at y=8,16,24,32,40 (8px spacing). Notes on Line 3 (y=24) and Line 1 (y=40) = a 5th. -->
+          <svg viewBox="0 0 86 52" width="86" height="52" aria-hidden="true">
+            <line x1="5" y1="8"  x2="81" y2="8"  stroke="#e5e7eb" stroke-width="1"/>
+            <line x1="5" y1="16" x2="81" y2="16" stroke="#e5e7eb" stroke-width="1"/>
+            <line x1="5" y1="24" x2="81" y2="24" stroke="#7c3aed" stroke-width="1.8"/>
+            <line x1="5" y1="32" x2="81" y2="32" stroke="#e5e7eb" stroke-width="1"/>
+            <line x1="5" y1="40" x2="81" y2="40" stroke="#7c3aed" stroke-width="1.8"/>
+            <ellipse cx="43" cy="24" rx="9" ry="5.5" fill="none" stroke="#7c3aed" stroke-width="1.6"/>
+            <ellipse cx="43" cy="40" rx="9" ry="5.5" fill="none" stroke="#7c3aed" stroke-width="1.6"/>
+          </svg>
+          <div class="hint-sub">line↔line &nbsp;···&nbsp; space↔space</div>
+        </div>
+
+        <!-- EVEN: notes on different position types (line + space) -->
+        <div class="hint-card hint-even">
+          <div class="hint-header">Even &thinsp;&middot;&thinsp; 2nd &middot; 4th &middot; 6th &middot; 8ve</div>
+          <!-- Bottom note on Line 1 (y=40), top note in Space 3 (y=20, between lines at y=16 and y=24) = a 6th. -->
+          <svg viewBox="0 0 86 52" width="86" height="52" aria-hidden="true">
+            <line x1="5" y1="8"  x2="81" y2="8"  stroke="#e5e7eb" stroke-width="1"/>
+            <line x1="5" y1="16" x2="81" y2="16" stroke="#e5e7eb" stroke-width="1"/>
+            <line x1="5" y1="24" x2="81" y2="24" stroke="#e5e7eb" stroke-width="1"/>
+            <line x1="5" y1="32" x2="81" y2="32" stroke="#e5e7eb" stroke-width="1"/>
+            <line x1="5" y1="40" x2="81" y2="40" stroke="#059669" stroke-width="1.8"/>
+            <!-- Shaded band to show the space where the top note lives -->
+            <rect x="5" y="16.5" width="76" height="7" fill="rgba(5,150,105,0.14)" rx="1"/>
+            <ellipse cx="43" cy="20" rx="9" ry="5.5" fill="none" stroke="#059669" stroke-width="1.6"/>
+            <ellipse cx="43" cy="40" rx="9" ry="5.5" fill="none" stroke="#059669" stroke-width="1.6"/>
+          </svg>
+          <div class="hint-sub">line↔space &nbsp;···&nbsp; space↔line</div>
+        </div>
+
+      </div>
+
       <div class="kb-guide">
         <kbd>1</kbd>–<kbd>8</kbd> <kbd>T</kbd> = interval (repeat to cycle)
         &nbsp;·&nbsp;
