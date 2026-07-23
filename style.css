@@ -275,3 +275,42 @@ button {
   background: #3b82f6 !important;
   border-color: #1d4ed8 !important;
 }
+
+/* ── Answer toast ─────────────────────────────────────────────────────────────────── */
+
+#toast {
+  position: fixed;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.72);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.14s ease, transform 0.14s ease;
+  z-index: 9999;
+
+  padding: 20px 44px;
+  border-radius: 18px;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  white-space: nowrap;
+  background: #fff;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+}
+
+#toast.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+#toast.toast-correct {
+  color: #15803d;
+  border: 3px solid #22c55e;
+  background: #f0fdf4;
+}
+
+#toast.toast-wrong {
+  color: #b91c1c;
+  border: 3px solid #ef4444;
+  background: #fef2f2;
+}

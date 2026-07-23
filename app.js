@@ -12,6 +12,7 @@ let selectedBottom   = null;
 let selectedTop      = null;
 let awaitingNext     = false;
 let nextTimer        = null;
+let toastTimer       = null;
 
 // ── Canvas size ───────────────────────────────────────────────────────────────
 
@@ -126,10 +127,28 @@ function buildNoteButtons() {
   });
 }
 
+// ── Toast ────────────────────────────────────────────────────────────────────
+
+function showToast(isCorrect) {
+  const el = document.getElementById('toast');
+  if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+  // Remove classes so re-showing fires the CSS transition again.
+  el.classList.remove('show', 'toast-correct', 'toast-wrong');
+  el.textContent = isCorrect ? '✓ Correct!' : '✗ Try again!';
+  // Force reflow so the transition sees a state change.
+  void el.offsetHeight;
+  el.classList.add('show', isCorrect ? 'toast-correct' : 'toast-wrong');
+  toastTimer = setTimeout(() => {
+    el.classList.remove('show');
+    toastTimer = null;
+  }, 950);
+}
+
 // ── Selection handlers ────────────────────────────────────────────────────────
 
 function onIntervalSelect(id) {
   if (awaitingNext) return;
+  playClick();
   selectedInterval = id;
   document.querySelectorAll('.interval-btn').forEach(btn => {
     btn.classList.toggle('selected', btn.dataset.id === id && !btn.disabled);
@@ -139,6 +158,7 @@ function onIntervalSelect(id) {
 
 function onNoteSelect(which, letter) {
   if (awaitingNext) return;
+  playClick();
   const cid = which === 'bottom' ? 'bottom-buttons' : 'top-buttons';
   if (which === 'bottom') selectedBottom = letter;
   else                    selectedTop    = letter;
@@ -257,6 +277,14 @@ function handleCheckAnswer() {
 
   renderStaff(currentQuestion, isCorrect ? '#22c55e' : '#ef4444');
   updateStatus();
+
+  // Audio + visual popup
+  if (isCorrect) {
+    playCorrect();
+  } else {
+    playIncorrect();
+  }
+  showToast(isCorrect);
 
   const feedbackEl = document.getElementById('feedback');
   if (isCorrect) {
