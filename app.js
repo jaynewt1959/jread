@@ -511,12 +511,27 @@ function handleCheckAnswer() {
   cycleIndex       = 0;
   updateGroupHighlight();   // clears all group highlights while awaiting
   document.getElementById('btn-check').disabled = true;
-  document.getElementById('btn-next').classList.remove('hidden');
   // Disable all answer buttons while showing feedback.
   document.querySelectorAll('.ans-btn').forEach(btn => { btn.disabled = true; });
 
-  // Auto-advance to next question after 2 s.
-  nextTimer = setTimeout(nextQuestion, 2000);
+  if (isCorrect) {
+    document.getElementById('btn-next').classList.remove('hidden');
+    // Auto-advance to next question after 2 s.
+    nextTimer = setTimeout(nextQuestion, 2000);
+  } else {
+    // Wrong: reset the same question so the user can try again.
+    nextTimer = setTimeout(() => {
+      awaitingNext = false;
+      feedbackEl.textContent = '';
+      feedbackEl.className   = '';
+      renderStaff(currentQuestion);   // re-render without red highlight
+      clearSelections();
+      document.querySelectorAll('.ans-btn:not(.locked)').forEach(btn => {
+        btn.disabled = false;
+      });
+      updateGroupHighlight();
+    }, 1500);
+  }
 }
 
 // ── Event listeners ───────────────────────────────────────────────────────────
