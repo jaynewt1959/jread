@@ -297,7 +297,119 @@ function updateStatus() {
     acc === null ? 'Accuracy: —' : 'Accuracy: ' + acc + '%';
 }
 
-// ── Exercise flow ─────────────────────────────────────────────────────────────
+// ── Progress dashboard ───────────────────────────────────────────────────────────
+
+function renderStats() {
+  // ── Overall summary line
+  let totalCorrect = 0, totalAnswered = 0;
+  Object.values(progress.stats).forEach(s => {
+    totalCorrect  += s.correct;
+    totalAnswered += s.total;
+  });
+  const overallAcc = totalAnswered === 0
+    ? null
+    : Math.round((totalCorrect / totalAnswered) * 100);
+
+  document.getElementById('stats-overall').textContent = totalAnswered === 0
+    ? 'No answers yet'
+    : overallAcc + '% correct · ' + totalAnswered + ' answered';
+
+  // ── Stage trail
+  const trail = document.getElementById('stats-trail');
+  trail.innerHTML = '';
+  STAGES.forEach((stage, si) => {
+    const isComplete = si < progress.stageIndex;
+    const isActive   = si === progress.stageIndex;
+    const status     = isComplete ? 'complete' : isActive ? 'active' : 'locked';
+    const mastered   = stage.intervals.filter(
+      id => progress.stats[id].streak >= MASTERY_STREAK
+    ).length;
+
+    // Connector line between nodes
+    if (si > 0) {
+      const conn = document.createElement('div');
+      conn.className = 'trail-conn' + (isComplete ? ' trail-conn-done' : '');
+      trail.appendChild(conn);
+    }
+
+    // Stage node
+    const node = document.createElement('div');
+    node.className = 'trail-node trail-' + status;
+    node.textContent = isComplete ? '✓' : stage.stage;
+    node.title = 'Stage ' + stage.stage + ': ' +
+      (isComplete ? 'complete' :
+       isActive   ? mastered + '/' + stage.intervals.length + ' mastered' :
+                   'locked');
+    trail.appendChild(node);
+  });
+
+  // ── Per-stage breakdown
+  const body = document.getElementById('stats-body');
+  body.innerHTML = '';
+
+  STAGES.forEach((stage, si) => {
+    const isUnlocked = si <= progress.stageIndex;
+    const isActive   = si === progress.stageIndex;
+    const isComplete = si < progress.stageIndex;
+    const mastered   = stage.intervals.filter(
+      id => progress.stats[id].streak >= MASTERY_STREAK
+    ).length;
+
+    const section = document.createElement('div');
+    section.className = 'stats-stage' + (isUnlocked ? '' : ' stats-stage-locked');
+
+    // Stage header
+    const hd = document.createElement('div');
+    hd.className = 'stats-stage-hd';
+    let badge = '';
+    if (isComplete) {
+      badge = '<span class="stats-badge stats-badge-done">complete<\/span>';
+    } else if (isActive) {
+      badge = '<span class="stats-badge stats-badge-active">' +
+        mastered + '/' + stage.intervals.length + ' mastered<\/span>';
+    } else {
+      badge = '<span class="stats-badge stats-badge-locked">locked<\/span>';
+    }
+    hd.innerHTML = '<span class="stats-stage-name">Stage ' + stage.stage + '<\/span>' + badge;
+    section.appendChild(hd);
+
+    // One row per interval
+    stage.intervals.forEach(id => {
+      const iv        = getInterval(id);
+      const s         = progress.stats[id];
+      const isMastered = s.streak >= MASTERY_STREAK;
+      const acc       = s.total === 0 ? null : Math.round((s.correct / s.total) * 100);
+
+      const row = document.createElement('div');
+      row.className = 'stats-row' + (isMastered ? ' stats-mastered' : '');
+
+      if (!isUnlocked) {
+        // Locked: just name
+        row.innerHTML = '<span class="stats-iv-name">' + iv.name +
+          '<\/span><span class="stats-locked-dash">—<\/span>';
+      } else {
+        const barPct = acc === null ? 0 : acc;
+        const streak = Math.min(s.streak, MASTERY_STREAK);
+        const pips   = Array.from({ length: MASTERY_STREAK }, (_, i) =>
+          '<span class="pip ' + (i < streak ? 'pip-on' : 'pip-off') + '"><\/span>'
+        ).join('');
+
+        row.innerHTML =
+          '<span class="stats-iv-name">' + iv.name + '<\/span>' +
+          '<div class="stats-bar"><div class="stats-bar-fill" style="width:' + barPct + '%"><\/div><\/div>' +
+          '<span class="stats-pct">' + (acc === null ? '—' : acc + '%') + '<\/span>' +
+          '<div class="stats-pips">' + pips + '<\/div>' +
+          '<span class="stats-check">' + (isMastered ? '✓' : '') + '<\/span>';
+      }
+
+      section.appendChild(row);
+    });
+
+    body.appendChild(section);
+  });
+}
+
+// ── Exercise flow ─────────────────────────────────────────────────────────────────────
 
 function startExercise() {
   isRunning = true;
@@ -363,6 +475,7 @@ function handleCheckAnswer() {
 
   renderStaff(currentQuestion, isCorrect ? '#22c55e' : '#ef4444');
   updateStatus();
+  renderStats();
 
   // Audio + visual popup
   if (isCorrect) {
@@ -416,6 +529,7 @@ document.getElementById('btn-reset').addEventListener('click', () => {
   if (!confirm('Reset all progress? This cannot be undone.')) return;
   progress = resetProgress();
   updateStatus();
+  renderStats();
   if (isRunning) stopExercise();
   buildIntervalButtons();
 });
@@ -485,3 +599,4 @@ buildKeyboard();
 buildIntervalButtons();
 buildNoteButtons();
 updateStatus();
+renderStats();
