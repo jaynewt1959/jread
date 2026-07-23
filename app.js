@@ -13,6 +13,8 @@ let selectedTop      = null;
 let awaitingNext     = false;
 let nextTimer        = null;
 let toastTimer       = null;
+let lastIntervalKey  = null;   // keyboard: which interval key was last pressed
+let cycleIndex       = 0;      // keyboard: which option in that key's cycle
 
 // ── Canvas size ───────────────────────────────────────────────────────────────
 
@@ -20,7 +22,29 @@ let toastTimer       = null;
 const CANVAS_W = GrandStaff.computeCanvasWidth({ numMeasures: 1, pixelsPerBeat: 52 });
 const CANVAS_H = 280;
 
-// ── Piano keyboard constants ──────────────────────────────────────────────────
+// ── Keyboard → interval mapping ──────────────────────────────────────────────────
+
+// Keys 1–8 cover the interval degree; T covers the tritone.
+// Pressing the same key again cycles through quality variants (major ↔ minor).
+const INTERVAL_KEY_MAP = {
+  '1': ['P1'],
+  '2': ['m2', 'M2'],
+  '3': ['m3', 'M3'],
+  '4': ['P4'],
+  't': ['TT'],
+  '5': ['P5'],
+  '6': ['m6', 'M6'],
+  '7': ['m7', 'M7'],
+  '8': ['P8'],
+};
+
+// Reverse: interval ID → shortcut label shown on each button.
+const INTERVAL_ID_TO_KEY = {};
+Object.entries(INTERVAL_KEY_MAP).forEach(([k, ids]) => {
+  ids.forEach(id => { INTERVAL_ID_TO_KEY[id] = k === 't' ? 'T' : k; });
+});
+
+// ── Piano keyboard constants ───────────────────────────────────────────────────────
 
 const WHITE_KEY_W = 32;
 const WHITE_KEY_H = 92;
@@ -103,8 +127,10 @@ function buildIntervalButtons() {
     const btn = document.createElement('button');
     btn.className  = 'ans-btn interval-btn' + (isActive ? '' : ' locked');
     btn.dataset.id = iv.id;
-    btn.textContent = iv.name;
     btn.disabled   = !isActive;
+    const keyLabel = INTERVAL_ID_TO_KEY[iv.id];
+    btn.innerHTML  = iv.name +
+      (keyLabel ? ' <span class="key-hint">' + keyLabel + '</span>' : '');
     btn.addEventListener('click', () => onIntervalSelect(iv.id));
     container.appendChild(btn);
   });
@@ -125,6 +151,61 @@ function buildNoteButtons() {
       container.appendChild(btn);
     });
   });
+}
+
+// ── Group highlight (active-group visual indicator) ───────────────────────────────────
+
+function getActiveGroupId() {
+  if (!isRunning || awaitingNext) return null;
+  if (!selectedInterval) return 'sg-interval';
+  if (!selectedBottom)   return 'sg-bottom';
+  if (!selectedTop)      return 'sg-top';
+  return null;
+}
+
+function updateGroupHighlight() {
+  const active = getActiveGroupId();
+  ['sg-interval', 'sg-bottom', 'sg-top'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('group-active', id === active);
+  });
+}
+
+// ── Keyboard interval cycling ────────────────────────────────────────────────────
+
+function handleIntervalKey(key) {
+  const candidates = INTERVAL_KEY_MAP[key] || [];
+  const activeIds  = new Set(getActiveIntervalIds(progress.stageIndex));
+  const available  = candidates.filter(id => activeIds.has(id));
+  if (available.length === 0) return;
+
+  if (key === lastIntervalKey) {
+    // Same key again: advance cycle position.
+    cycleIndex = (cycleIndex + 1) % available.length;
+  } else {
+    lastIntervalKey = key;
+    cycleIndex      = 0;
+  }
+  onIntervalSelect(available[cycleIndex]);
+}
+
+function handleKbBackspace() {
+  if (selectedTop) {
+    selectedTop = null;
+    document.querySelectorAll('#top-buttons .note-btn')
+      .forEach(b => b.classList.remove('selected'));
+  } else if (selectedBottom) {
+    selectedBottom = null;
+    document.querySelectorAll('#bottom-buttons .note-btn')
+      .forEach(b => b.classList.remove('selected'));
+  } else if (selectedInterval) {
+    selectedInterval = null;
+    lastIntervalKey  = null;
+    cycleIndex       = 0;
+    document.querySelectorAll('.interval-btn')
+      .forEach(b => b.classList.remove('selected'));
+  }
+  updateCheckButton();
 }
 
 // ── Toast ────────────────────────────────────────────────────────────────────
@@ -172,10 +253,13 @@ function onNoteSelect(which, letter) {
 function updateCheckButton() {
   document.getElementById('btn-check').disabled =
     !(selectedInterval && selectedBottom && selectedTop);
+  updateGroupHighlight();
 }
 
 function clearSelections() {
   selectedInterval = selectedBottom = selectedTop = null;
+  lastIntervalKey  = null;
+  cycleIndex       = 0;
   document.querySelectorAll('.ans-btn.selected').forEach(b => b.classList.remove('selected'));
   updateCheckButton();
 }
@@ -244,7 +328,9 @@ function stopExercise() {
 
 function nextQuestion() {
   if (!isRunning) return;
-  awaitingNext = false;
+  awaitingNext    = false;
+  lastIntervalKey = null;
+  cycleIndex      = 0;
 
   clearSelections();
   document.getElementById('feedback').textContent = '';
@@ -307,7 +393,10 @@ function handleCheckAnswer() {
     }, 400);
   }
 
-  awaitingNext = true;
+  awaitingNext    = true;
+  lastIntervalKey  = null;
+  cycleIndex       = 0;
+  updateGroupHighlight();   // clears all group highlights while awaiting
   document.getElementById('btn-check').disabled = true;
   document.getElementById('btn-next').classList.remove('hidden');
   // Disable all answer buttons while showing feedback.
@@ -338,7 +427,59 @@ document.getElementById('btn-next').addEventListener('click', () => {
   nextQuestion();
 });
 
-// ── Initialise ────────────────────────────────────────────────────────────────
+// ── Keyboard shortcuts ─────────────────────────────────────────────────────────────
+
+document.addEventListener('keydown', e => {
+  if (!isRunning) return;
+  // Ignore if a real form field has focus.
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+  // While awaiting next question: Enter or Space advances.
+  if (awaitingNext) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (nextTimer) { clearTimeout(nextTimer); nextTimer = null; }
+      nextQuestion();
+    }
+    return;
+  }
+
+  // Enter → submit (Check).
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (!document.getElementById('btn-check').disabled) handleCheckAnswer();
+    return;
+  }
+
+  // Backspace → undo last selection.
+  if (e.key === 'Backspace') {
+    e.preventDefault();
+    handleKbBackspace();
+    return;
+  }
+
+  const key = e.key.toLowerCase();
+
+  // Note letters: C D E F G A B.
+  if (key.length === 1 && 'cdefgab'.includes(key)) {
+    // First unset slot gets the letter; if both are set, re-select top note.
+    if (!selectedBottom) {
+      onNoteSelect('bottom', key.toUpperCase());
+    } else {
+      onNoteSelect('top', key.toUpperCase());
+    }
+    return;
+  }
+
+  // Interval keys: 1–8 for degree, T for tritone.
+  if (INTERVAL_KEY_MAP[key]) {
+    handleIntervalKey(key);
+  }
+});
+
+// ── Initialise ─────────────────────────────────────────────────────────────────────
 
 buildKeyboard();
 buildIntervalButtons();

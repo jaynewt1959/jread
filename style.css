@@ -118,6 +118,14 @@ main {
   margin-bottom: 8px;
 }
 
+/* Active group: subtle blue glow (no layout shift) */
+.selector-group.group-active {
+  box-shadow: 0 0 0 2px #3b82f6;
+  border-radius: 10px;
+  padding: 8px;
+  margin: -8px;
+}
+
 .button-grid {
   display: flex;
   flex-wrap: wrap;
@@ -184,6 +192,49 @@ button {
 
 .interval-btn { min-width: 112px; text-align: center; }
 .note-btn     { min-width: 38px;  text-align: center; font-weight: 600; }
+
+/* Keyboard shortcut badge on interval buttons */
+.key-hint {
+  display: inline-block;
+  font-size: 10px;
+  font-family: ui-monospace, 'Courier New', monospace;
+  font-weight: 400;
+  background: rgba(0, 0, 0, 0.07);
+  border-radius: 3px;
+  padding: 1px 4px;
+  margin-left: 5px;
+  color: #6b7280;
+  line-height: 1.4;
+  vertical-align: middle;
+}
+.ans-btn.selected .key-hint {
+  background: rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Keyboard shortcut guide bar */
+.kb-guide {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  line-height: 2;
+}
+
+.kb-guide kbd {
+  display: inline-block;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, 'Courier New', monospace;
+  font-size: 11px;
+  color: #374151;
+  line-height: 1.5;
+}
 
 /* ── Action bar ──────────────────────────────────────────────────────────── */
 
