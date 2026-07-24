@@ -222,7 +222,7 @@ function showToast(isCorrect) {
   toastTimer = setTimeout(() => {
     el.classList.remove('show');
     toastTimer = null;
-  }, 950);
+  }, 1900);
 }
 
 // ── Selection handlers ────────────────────────────────────────────────────────
@@ -530,7 +530,7 @@ function handleCheckAnswer() {
         btn.disabled = false;
       });
       updateGroupHighlight();
-    }, 1500);
+    }, 3000);
   }
 }
 
