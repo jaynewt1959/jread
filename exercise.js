@@ -118,18 +118,28 @@ function generateQuestion(activeIntervalIds, activeKeys, lastQuestion) {
 // ── VexFlow score string ──────────────────────────────────────────────────────
 
 /**
- * Build the EasyScore string for the treble staff.
- *   - Harmonic interval: a chord half-note followed by a half rest.
- *   - Unison: a single half-note followed by a half rest.
- *
- * Together these fill 4 beats of a 4/4 measure.
+ * Convert a full note string ('F#4') to the EasyScore form VexFlow expects
+ * given the current key signature. If the accidental is already implied by
+ * the key sig, strip it so VexFlow doesn't render a redundant courtesy symbol.
  */
-function buildStaffScore(bottom, top, intervalId) {
+function toStaffNoteStr(noteStr, key) {
+  const letter = noteStr.slice(0, -1);  // e.g. 'F#'
+  const oct    = noteStr.slice(-1);     // e.g. '4'
+  const base   = letter[0];             // e.g. 'F'
+  const keyNotes = KEY_NOTES[key] || KEY_NOTES['C'];
+  const keyLetter = keyNotes.find(n => n[0] === base);
+  // If this note's letter matches what the key sig provides, use just the base.
+  return (keyLetter === letter) ? (base + oct) : noteStr;
+}
+
+function buildStaffScore(bottom, top, intervalId, key) {
+  const b = toStaffNoteStr(bottom, key);
+  const t = toStaffNoteStr(top,    key);
   const halfRest = ', B4/h/r';
   if (intervalId === 'P1') {
-    return bottom + '/h' + halfRest;
+    return b + '/h' + halfRest;
   }
-  return '(' + bottom + ' ' + top + ')/h' + halfRest;
+  return '(' + b + ' ' + t + ')/h' + halfRest;
 }
 
 // ── Answer validation ─────────────────────────────────────────────────────────

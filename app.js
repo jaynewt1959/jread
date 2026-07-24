@@ -407,7 +407,7 @@ function renderStaff(question, color) {
   const container = document.getElementById('grand-staff');
   container.innerHTML = '';
   try {
-    const score = buildStaffScore(question.bottom, question.top, question.intervalId);
+    const score = buildStaffScore(question.bottom, question.top, question.intervalId, question.key);
     const gs = new GrandStaff('grand-staff', {
       width:         CANVAS_W,
       height:        CANVAS_H,
