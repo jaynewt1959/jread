@@ -109,6 +109,7 @@ main {
 .answer-panel.mode-step      #flashcard-panel  { display: none; }
 .answer-panel.mode-flashcard .steps-and-hints  { display: none; }
 .answer-panel.mode-flashcard #flashcard-panel  { display: block; }
+.answer-panel.mode-flashcard .kb-guide         { display: none; }
 
 /* ── Flash-card panel ───────────────────────────────────────────────────── */
 
