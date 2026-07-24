@@ -145,19 +145,34 @@ function shouldUseFlashcard(intervalId) {
     && progress.stats[intervalId].streak >= MASTERY_STREAK;
 }
 
+// Quality sibling map: M↔m for same degree. Perfect/tritone have no sibling.
+const QUALITY_SIBLING = {
+  m2: 'M2', M2: 'm2', m3: 'M3', M3: 'm3',
+  m6: 'M6', M6: 'm6', m7: 'M7', M7: 'm7',
+};
+
 function buildFlashcardButtons() {
   const container  = document.getElementById('flashcard-buttons');
   container.innerHTML = '';
   const correctId  = currentQuestion.intervalId;
+  const correctIv  = getInterval(correctId);
+  const siblingId  = QUALITY_SIBLING[correctId] || null;
   const activeIds  = getActiveIntervalIds(progress.stageIndex);
 
-  // Distractors: active intervals first, then fill from full list.
+  // Distractor priority:
+  //   1. Quality sibling (m2 when correct is M2, etc.) — always included if exists.
+  //   2. Active intervals (seen by the user) before unseen ones.
+  //   3. Closest in semitone count — maximally confusable.
   const pool = INTERVALS
     .filter(iv => iv.id !== correctId)
     .sort((a, b) => {
+      if (a.id === siblingId) return -1;
+      if (b.id === siblingId) return  1;
       const aActive = activeIds.includes(a.id) ? 0 : 1;
       const bActive = activeIds.includes(b.id) ? 0 : 1;
-      return aActive - bActive;
+      if (aActive !== bActive) return aActive - bActive;
+      return Math.abs(a.semitones - correctIv.semitones)
+           - Math.abs(b.semitones - correctIv.semitones);
     });
 
   const choices = [
