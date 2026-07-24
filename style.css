@@ -380,6 +380,23 @@ button {
   white-space: nowrap;
 }
 
+/* ── Major/minor algorithm reminder ────────────────────────────────────── */
+
+.interval-algo {
+  margin: 8px 0 0 0;
+  padding: 8px 12px 8px 28px;
+  background: #f8f7ff;
+  border: 1px solid #ede9fe;
+  border-radius: 8px;
+  list-style: decimal;
+  font-size: 11px;
+  color: #4b5563;
+  line-height: 1.7;
+}
+
+.interval-algo li strong,
+.interval-algo li b { color: #111827; }
+
 /* ── Progress dashboard ───────────────────────────────────────────────────── */
 
 /* Collapse the default browser triangle on <summary> */
