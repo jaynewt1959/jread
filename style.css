@@ -290,7 +290,7 @@ button {
   cursor: default;
 }
 
-.note-btn { min-width: 38px; text-align: center; font-weight: 600; }
+.note-btn { min-width: 44px; text-align: center; font-weight: 600; }
 
 /* Keyboard shortcut badge on interval buttons */
 .key-hint {

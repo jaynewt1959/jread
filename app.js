@@ -227,11 +227,12 @@ function buildIntervalNumberButtons() {
   });
 }
 
-function buildNoteButtons() {
+function buildNoteButtons(key) {
+  const letters = KEY_NOTES[key] || KEY_NOTES['C'];
   ['bottom-buttons', 'top-buttons'].forEach((cid, idx) => {
     const container = document.getElementById(cid);
     container.innerHTML = '';
-    NOTE_LETTERS.forEach(letter => {
+    letters.forEach(letter => {
       const btn = document.createElement('button');
       btn.className      = 'ans-btn note-btn';
       btn.dataset.letter = letter;
@@ -410,7 +411,7 @@ function renderStaff(question, color) {
     const gs = new GrandStaff('grand-staff', {
       width:         CANVAS_W,
       height:        CANVAS_H,
-      keySignature:  STAFF_CONFIG.keySignature,
+      keySignature:  question.key,
       timeSignature: '4/4',
     }).addMeasure(score, 'C3/w/r');
 
@@ -621,11 +622,13 @@ function nextQuestion() {
   setFeedback('', '');
   document.getElementById('btn-next').classList.add('hidden');
 
-  const activeIds = getActiveIntervalIds(progress.stageIndex);
-  currentQuestion = generateQuestion(activeIds, lastQuestion);
-  lastQuestion    = currentQuestion;
+  const activeIds  = getActiveIntervalIds(progress.stageIndex);
+  const activeKeys = getActiveKeys(progress.stageIndex);
+  currentQuestion  = generateQuestion(activeIds, activeKeys, lastQuestion);
+  lastQuestion     = currentQuestion;
   if (!currentQuestion) return;
 
+  buildNoteButtons(currentQuestion.key);
   renderStaff(currentQuestion);
   highlightKeys(currentQuestion.bottom, currentQuestion.top);
 
@@ -700,9 +703,13 @@ document.addEventListener('keydown', e => {
   }
 
   // Steps 'bottom' / 'top': note letter keys.
+  // Resolve to the key-specific note name (e.g. 'f' → 'F#' in G major).
   if ((currentStep === 'bottom' || currentStep === 'top') &&
        key.length === 1 && 'cdefgab'.includes(key)) {
-    onNoteSelect(currentStep, key.toUpperCase());
+    const base      = key.toUpperCase();
+    const keyNotes  = currentQuestion ? (KEY_NOTES[currentQuestion.key] || KEY_NOTES['C']) : KEY_NOTES['C'];
+    const matched   = keyNotes.find(n => n[0] === base);
+    if (matched) onNoteSelect(currentStep, matched);
     return;
   }
 
@@ -717,7 +724,6 @@ document.addEventListener('keydown', e => {
 
 buildKeyboard();
 buildIntervalNumberButtons();
-buildNoteButtons();
 buildQualityButtons();
 updateStatus();
 renderStats();

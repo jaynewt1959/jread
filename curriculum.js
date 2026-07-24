@@ -35,6 +35,38 @@ function getInterval(id) {
   return INTERVALS.find(iv => iv.id === id);
 }
 
+// ── Key curriculum ──────────────────────────────────────────────────────────────
+
+// Keys are introduced progressively alongside the interval stages.
+// fromStage is 0-based (0 = Stage 1 display).
+const KEY_GROUPS = [
+  { fromStage: 0, keys: ['C']         },   // Stage 1–2: C major only
+  { fromStage: 2, keys: ['G', 'F']    },   // Stage 3: +G (1♯), F (1♭)
+  { fromStage: 3, keys: ['D', 'Bb']   },   // Stage 4: +D (2♯), B♭ (2♭)
+  { fromStage: 4, keys: ['A', 'Eb']   },   // Stage 5: +A (3♯), E♭ (3♭)
+];
+
+// Diatonic notes for each key in scale order starting from the tonic.
+// These strings are used both as button labels and as note-letter identifiers.
+const KEY_NOTES = {
+  C:  ['C', 'D', 'E', 'F',  'G',  'A',  'B' ],
+  G:  ['G', 'A', 'B', 'C',  'D',  'E',  'F#'],
+  D:  ['D', 'E', 'F#','G',  'A',  'B',  'C#'],
+  A:  ['A', 'B', 'C#','D',  'E',  'F#', 'G#'],
+  F:  ['F', 'G', 'A', 'Bb', 'C',  'D',  'E' ],
+  Bb: ['Bb','C', 'D', 'Eb', 'F',  'G',  'A' ],
+  Eb: ['Eb','F', 'G', 'Ab', 'Bb', 'C',  'D' ],
+};
+
+/** Return all currently-active key signatures for a given stage index. */
+function getActiveKeys(stageIndex) {
+  const keys = [];
+  KEY_GROUPS.forEach(group => {
+    if (stageIndex >= group.fromStage) keys.push(...group.keys);
+  });
+  return keys;
+}
+
 /**
  * Return all interval ids that are unlocked at (or before) stageIndex.
  * stageIndex is 0-based.
