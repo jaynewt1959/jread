@@ -3,46 +3,62 @@
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
-let progress         = loadProgress();
-let isRunning        = false;
-let currentQuestion  = null;
-let lastQuestion     = null;
-let selectedInterval = null;
-let selectedBottom   = null;
-let selectedTop      = null;
-let awaitingNext     = false;
-let nextTimer        = null;
-let toastTimer       = null;
-let lastIntervalKey  = null;   // keyboard: which interval key was last pressed
-let cycleIndex       = 0;      // keyboard: which option in that key's cycle
+let progress        = loadProgress();
+let isRunning       = false;
+let currentQuestion = null;
+let lastQuestion    = null;
+let currentStep     = 'interval'; // 'interval' | 'bottom' | 'top' | 'quality'
+let questionWrong   = false;      // any mistake on any step → wrong for scoring
+let awaitingNext    = false;
+let nextTimer       = null;
+let toastTimer      = null;
 
 // ── Canvas size ───────────────────────────────────────────────────────────────
 
-// Sized for C major (0 accidentals) with comfortable note spacing.
 const CANVAS_W = GrandStaff.computeCanvasWidth({ numMeasures: 1, pixelsPerBeat: 52 });
 const CANVAS_H = 280;
 
-// ── Keyboard → interval mapping ──────────────────────────────────────────────────
+// ── Interval step data ───────────────────────────────────────────────────────
 
-// Keys 1–8 cover the interval degree; T covers the tritone.
-// Pressing the same key again cycles through quality variants (major ↔ minor).
-const INTERVAL_KEY_MAP = {
-  '1': ['P1'],
-  '2': ['m2', 'M2'],
-  '3': ['m3', 'M3'],
-  '4': ['P4'],
-  't': ['TT'],
-  '5': ['P5'],
-  '6': ['m6', 'M6'],
-  '7': ['m7', 'M7'],
-  '8': ['P8'],
+// Maps intervalId → the number value shown on step-1 buttons.
+const INTERVAL_NUMBER_MAP = {
+  P1: 'unison',
+  m2: '2nd',  M2: '2nd',
+  m3: '3rd',  M3: '3rd',
+  P4: '4th',
+  TT: 'tritone',
+  P5: '5th',
+  m6: '6th',  M6: '6th',
+  m7: '7th',  M7: '7th',
+  P8: 'octave',
 };
 
-// Reverse: interval ID → shortcut label shown on each button.
-const INTERVAL_ID_TO_KEY = {};
-Object.entries(INTERVAL_KEY_MAP).forEach(([k, ids]) => {
-  ids.forEach(id => { INTERVAL_ID_TO_KEY[id] = k === 't' ? 'T' : k; });
-});
+// Only 2nd/3rd/6th/7th have a quality step; all others are perfect or tritone.
+const INTERVAL_QUALITY_MAP = {
+  m2: 'minor', M2: 'major',
+  m3: 'minor', M3: 'major',
+  m6: 'minor', M6: 'major',
+  m7: 'minor', M7: 'major',
+};
+
+// The 9 buttons shown in step 1 (always all visible, regardless of stage).
+const INTERVAL_NUMBERS = [
+  { value: 'unison',  label: 'Unison'  },
+  { value: '2nd',     label: '2nd'     },
+  { value: '3rd',     label: '3rd'     },
+  { value: '4th',     label: '4th'     },
+  { value: 'tritone', label: 'Tritone' },
+  { value: '5th',     label: '5th'     },
+  { value: '6th',     label: '6th'     },
+  { value: '7th',     label: '7th'     },
+  { value: 'octave',  label: 'Octave'  },
+];
+
+// Keyboard shortcuts for step 1.
+const NUM_KEY_MAP = {
+  '1': 'unison', '2': '2nd', '3': '3rd', '4': '4th',
+  't': 'tritone', '5': '5th', '6': '6th', '7': '7th', '8': 'octave',
+};
 
 // ── Piano keyboard constants ───────────────────────────────────────────────────────
 
@@ -115,23 +131,17 @@ function clearKeyHighlights() {
   });
 }
 
-// ── Answer button builders ────────────────────────────────────────────────────
+// ── Button builders ───────────────────────────────────────────────────────────────
 
-function buildIntervalButtons() {
-  const container = document.getElementById('interval-buttons');
+function buildIntervalNumberButtons() {
+  const container = document.getElementById('interval-number-buttons');
   container.innerHTML = '';
-  const activeIds = new Set(getActiveIntervalIds(progress.stageIndex));
-
-  INTERVALS.forEach(iv => {
-    const isActive = activeIds.has(iv.id);
+  INTERVAL_NUMBERS.forEach(({ value, label }) => {
     const btn = document.createElement('button');
-    btn.className  = 'ans-btn interval-btn' + (isActive ? '' : ' locked');
-    btn.dataset.id = iv.id;
-    btn.disabled   = !isActive;
-    const keyLabel = INTERVAL_ID_TO_KEY[iv.id];
-    btn.innerHTML  = iv.name +
-      (keyLabel ? ' <span class="key-hint">' + keyLabel + '</span>' : '');
-    btn.addEventListener('click', () => onIntervalSelect(iv.id));
+    btn.className     = 'ans-btn num-btn';
+    btn.dataset.value = value;
+    btn.textContent   = label;
+    btn.addEventListener('click', () => onIntervalNumberSelect(value));
     container.appendChild(btn);
   });
 }
@@ -142,9 +152,9 @@ function buildNoteButtons() {
     container.innerHTML = '';
     NOTE_LETTERS.forEach(letter => {
       const btn = document.createElement('button');
-      btn.className       = 'ans-btn note-btn';
-      btn.dataset.letter  = letter;
-      btn.textContent     = letter;
+      btn.className      = 'ans-btn note-btn';
+      btn.dataset.letter = letter;
+      btn.textContent    = letter;
       btn.addEventListener('click', () =>
         onNoteSelect(idx === 0 ? 'bottom' : 'top', letter)
       );
@@ -153,70 +163,91 @@ function buildNoteButtons() {
   });
 }
 
-// ── Group highlight (active-group visual indicator) ───────────────────────────────────
-
-function getActiveGroupId() {
-  if (!isRunning || awaitingNext) return null;
-  if (!selectedInterval) return 'sg-interval';
-  if (!selectedBottom)   return 'sg-bottom';
-  if (!selectedTop)      return 'sg-top';
-  return null;
-}
-
-function updateGroupHighlight() {
-  const active = getActiveGroupId();
-  ['sg-interval', 'sg-bottom', 'sg-top'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.toggle('group-active', id === active);
+function buildQualityButtons() {
+  const container = document.getElementById('quality-buttons');
+  container.innerHTML = '';
+  ['Major', 'Minor'].forEach(q => {
+    const btn = document.createElement('button');
+    btn.className     = 'ans-btn quality-btn';
+    btn.dataset.value = q.toLowerCase();
+    btn.textContent   = q;
+    btn.addEventListener('click', () => onQualitySelect(q.toLowerCase()));
+    container.appendChild(btn);
   });
 }
 
-// ── Keyboard interval cycling ────────────────────────────────────────────────────
+// ── Step management ───────────────────────────────────────────────────────────────
 
-function handleIntervalKey(key) {
-  const candidates = INTERVAL_KEY_MAP[key] || [];
-  const activeIds  = new Set(getActiveIntervalIds(progress.stageIndex));
-  const available  = candidates.filter(id => activeIds.has(id));
-  if (available.length === 0) return;
-
-  if (key === lastIntervalKey) {
-    // Same key again: advance cycle position.
-    cycleIndex = (cycleIndex + 1) % available.length;
-  } else {
-    lastIntervalKey = key;
-    cycleIndex      = 0;
-  }
-  onIntervalSelect(available[cycleIndex]);
+function setStepState(stepId, state) {
+  const el = document.getElementById(stepId);
+  if (!el) return;
+  el.className = 'step-section step-' + state;
+  el.querySelectorAll('button').forEach(b => {
+    b.disabled = (state === 'locked' || state === 'confirmed');
+  });
 }
 
-function handleKbBackspace() {
-  if (selectedTop) {
-    selectedTop = null;
-    document.querySelectorAll('#top-buttons .note-btn')
-      .forEach(b => b.classList.remove('selected'));
-  } else if (selectedBottom) {
-    selectedBottom = null;
-    document.querySelectorAll('#bottom-buttons .note-btn')
-      .forEach(b => b.classList.remove('selected'));
-  } else if (selectedInterval) {
-    selectedInterval = null;
-    lastIntervalKey  = null;
-    cycleIndex       = 0;
-    document.querySelectorAll('.interval-btn')
-      .forEach(b => b.classList.remove('selected'));
-  }
-  updateCheckButton();
+function activateStep(step) {
+  const el = document.getElementById('step-' + step);
+  if (!el) return;
+  el.style.display = '';
+  setStepState('step-' + step, 'active');
+  setFeedback('', '');
 }
 
-// ── Toast ────────────────────────────────────────────────────────────────────
+function confirmStepBtn(containerId, dataAttr, value) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  c.querySelectorAll('button').forEach(btn => {
+    if (btn.dataset[dataAttr] === value) btn.classList.add('btn-confirmed');
+    btn.disabled = true;
+  });
+}
+
+function flashWrongBtn(containerId, dataAttr, value) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  const btn = Array.from(c.querySelectorAll('button'))
+    .find(b => b.dataset[dataAttr] === value);
+  if (!btn) return;
+  btn.classList.add('btn-flash-wrong');
+  setTimeout(() => btn.classList.remove('btn-flash-wrong'), 700);
+}
+
+function clearAllSteps() {
+  ['step-interval', 'step-bottom', 'step-top'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'step-section step-locked';
+    el.querySelectorAll('button').forEach(b => {
+      b.classList.remove('btn-confirmed', 'btn-flash-wrong');
+      b.disabled = false;
+    });
+  });
+  const qEl = document.getElementById('step-quality');
+  if (qEl) {
+    qEl.style.display = 'none';
+    qEl.className = 'step-section step-locked';
+    qEl.querySelectorAll('button').forEach(b => {
+      b.classList.remove('btn-confirmed', 'btn-flash-wrong');
+      b.disabled = false;
+    });
+  }
+}
+
+function setFeedback(text, cls) {
+  const el = document.getElementById('feedback');
+  el.textContent = text;
+  el.className   = cls;
+}
+
+// ── Toast ───────────────────────────────────────────────────────────────────
 
 function showToast(isCorrect) {
   const el = document.getElementById('toast');
   if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
-  // Remove classes so re-showing fires the CSS transition again.
   el.classList.remove('show', 'toast-correct', 'toast-wrong');
   el.textContent = isCorrect ? '✓ Correct!' : '✗ Try again!';
-  // Force reflow so the transition sees a state change.
   void el.offsetHeight;
   el.classList.add('show', isCorrect ? 'toast-correct' : 'toast-wrong');
   toastTimer = setTimeout(() => {
@@ -225,43 +256,67 @@ function showToast(isCorrect) {
   }, 1900);
 }
 
-// ── Selection handlers ────────────────────────────────────────────────────────
+// ── Step selection handlers ───────────────────────────────────────────────
 
-function onIntervalSelect(id) {
-  if (awaitingNext) return;
-  playClick();
-  selectedInterval = id;
-  document.querySelectorAll('.interval-btn').forEach(btn => {
-    btn.classList.toggle('selected', btn.dataset.id === id && !btn.disabled);
-  });
-  updateCheckButton();
+function onIntervalNumberSelect(value) {
+  if (currentStep !== 'interval' || awaitingNext || !currentQuestion) return;
+  const correct = INTERVAL_NUMBER_MAP[currentQuestion.intervalId];
+  if (value === correct) {
+    playClick();
+    confirmStepBtn('interval-number-buttons', 'value', value);
+    setStepState('step-interval', 'confirmed');
+    currentStep = 'bottom';
+    activateStep('bottom');
+  } else {
+    if (!questionWrong) { questionWrong = true; playIncorrect(); }
+    flashWrongBtn('interval-number-buttons', 'value', value);
+    setFeedback('Not quite — try again', 'feedback-wrong');
+  }
 }
 
 function onNoteSelect(which, letter) {
-  if (awaitingNext) return;
-  playClick();
+  if (awaitingNext || !currentQuestion) return;
+  if (currentStep !== which) return;
+  const correct = which === 'bottom'
+    ? currentQuestion.bottomLetter
+    : currentQuestion.topLetter;
   const cid = which === 'bottom' ? 'bottom-buttons' : 'top-buttons';
-  if (which === 'bottom') selectedBottom = letter;
-  else                    selectedTop    = letter;
 
-  document.querySelectorAll('#' + cid + ' .note-btn').forEach(btn => {
-    btn.classList.toggle('selected', btn.dataset.letter === letter);
-  });
-  updateCheckButton();
+  if (letter === correct) {
+    playClick();
+    confirmStepBtn(cid, 'letter', letter);
+    setStepState('step-' + which, 'confirmed');
+    if (which === 'bottom') {
+      currentStep = 'top';
+      activateStep('top');
+    } else {
+      if (currentQuestion.intervalId in INTERVAL_QUALITY_MAP) {
+        currentStep = 'quality';
+        activateStep('quality');
+      } else {
+        completeQuestion();
+      }
+    }
+  } else {
+    if (!questionWrong) { questionWrong = true; playIncorrect(); }
+    flashWrongBtn(cid, 'letter', letter);
+    setFeedback('Not quite — try again', 'feedback-wrong');
+  }
 }
 
-function updateCheckButton() {
-  document.getElementById('btn-check').disabled =
-    !(selectedInterval && selectedBottom && selectedTop);
-  updateGroupHighlight();
-}
-
-function clearSelections() {
-  selectedInterval = selectedBottom = selectedTop = null;
-  lastIntervalKey  = null;
-  cycleIndex       = 0;
-  document.querySelectorAll('.ans-btn.selected').forEach(b => b.classList.remove('selected'));
-  updateCheckButton();
+function onQualitySelect(value) {
+  if (currentStep !== 'quality' || awaitingNext || !currentQuestion) return;
+  const correct = INTERVAL_QUALITY_MAP[currentQuestion.intervalId];
+  if (value === correct) {
+    playClick();
+    confirmStepBtn('quality-buttons', 'value', value);
+    setStepState('step-quality', 'confirmed');
+    completeQuestion();
+  } else {
+    if (!questionWrong) { questionWrong = true; playIncorrect(); }
+    flashWrongBtn('quality-buttons', 'value', value);
+    setFeedback('Not quite — try again', 'feedback-wrong');
+  }
 }
 
 // ── Grand staff rendering ─────────────────────────────────────────────────────
@@ -411,12 +466,48 @@ function renderStats() {
 
 // ── Exercise flow ─────────────────────────────────────────────────────────────────────
 
+function completeQuestion() {
+  if (!currentQuestion) return;
+  const isCorrect = !questionWrong;
+  const { stageUnlocked, newStageIndex } = recordAnswer(
+    progress, currentQuestion.intervalId, isCorrect
+  );
+
+  renderStaff(currentQuestion, isCorrect ? '#22c55e' : '#ef4444');
+  updateStatus();
+  renderStats();
+
+  if (isCorrect) {
+    playCorrect();
+    showToast(true);
+    setFeedback('Correct!', 'feedback-correct');
+  } else {
+    const iv = getInterval(currentQuestion.intervalId);
+    setFeedback(
+      'Done — ' + iv.name +
+      ' · Bottom: ' + currentQuestion.bottomLetter +
+      ' · Top: ' + currentQuestion.topLetter,
+      'feedback-wrong'
+    );
+  }
+
+  if (stageUnlocked) {
+    setTimeout(() => {
+      const el = document.getElementById('feedback');
+      el.textContent += '   🎉 Stage ' + (newStageIndex + 1) + ' unlocked!';
+    }, 400);
+  }
+
+  awaitingNext = true;
+  document.getElementById('btn-next').classList.remove('hidden');
+  nextTimer = setTimeout(nextQuestion, 2000);
+}
+
 function startExercise() {
   isRunning = true;
   document.getElementById('btn-start-stop').textContent = 'Stop';
   document.getElementById('staff-placeholder').style.display = 'none';
   document.getElementById('answer-panel').classList.remove('hidden');
-  buildIntervalButtons();   // reflect current stage
   nextQuestion();
 }
 
@@ -427,26 +518,23 @@ function stopExercise() {
 
   document.getElementById('btn-start-stop').textContent = 'Start';
   document.getElementById('answer-panel').classList.add('hidden');
-  document.getElementById('btn-check').disabled = true;
   document.getElementById('btn-next').classList.add('hidden');
-  document.getElementById('feedback').textContent = '';
-  document.getElementById('feedback').className   = '';
+  setFeedback('', '');
   document.getElementById('staff-placeholder').style.display = '';
   document.getElementById('grand-staff').innerHTML = '';
 
-  clearSelections();
+  clearAllSteps();
   clearKeyHighlights();
 }
 
 function nextQuestion() {
   if (!isRunning) return;
-  awaitingNext    = false;
-  lastIntervalKey = null;
-  cycleIndex      = 0;
+  awaitingNext  = false;
+  questionWrong = false;
+  currentStep   = 'interval';
 
-  clearSelections();
-  document.getElementById('feedback').textContent = '';
-  document.getElementById('feedback').className   = '';
+  clearAllSteps();
+  setFeedback('', '');
   document.getElementById('btn-next').classList.add('hidden');
 
   const activeIds = getActiveIntervalIds(progress.stageIndex);
@@ -456,82 +544,7 @@ function nextQuestion() {
 
   renderStaff(currentQuestion);
   highlightKeys(currentQuestion.bottom, currentQuestion.top);
-
-  // Re-enable answer buttons (they were all disabled after last Check).
-  document.querySelectorAll('.ans-btn:not(.locked)').forEach(btn => {
-    btn.disabled = false;
-  });
-}
-
-function handleCheckAnswer() {
-  if (!currentQuestion) return;
-
-  const isCorrect = checkAnswer(
-    currentQuestion, selectedInterval, selectedBottom, selectedTop
-  );
-  const { stageUnlocked, newStageIndex } = recordAnswer(
-    progress, currentQuestion.intervalId, isCorrect
-  );
-
-  renderStaff(currentQuestion, isCorrect ? '#22c55e' : '#ef4444');
-  updateStatus();
-  renderStats();
-
-  // Audio + visual popup
-  if (isCorrect) {
-    playCorrect();
-  } else {
-    playIncorrect();
-  }
-  showToast(isCorrect);
-
-  const feedbackEl = document.getElementById('feedback');
-  if (isCorrect) {
-    feedbackEl.textContent = 'Correct!';
-    feedbackEl.className   = 'feedback-correct';
-  } else {
-    const iv = getInterval(currentQuestion.intervalId);
-    feedbackEl.textContent =
-      'Not quite — ' + iv.name +
-      ' · Bottom: ' + currentQuestion.bottomLetter +
-      ' · Top: '    + currentQuestion.topLetter;
-    feedbackEl.className = 'feedback-wrong';
-  }
-
-  if (stageUnlocked) {
-    // Brief delay so the user reads the correct/wrong message first.
-    setTimeout(() => {
-      feedbackEl.textContent += '   🎉 Stage ' + (newStageIndex + 1) + ' unlocked!';
-      buildIntervalButtons();   // add newly-unlocked interval buttons
-    }, 400);
-  }
-
-  awaitingNext    = true;
-  lastIntervalKey  = null;
-  cycleIndex       = 0;
-  updateGroupHighlight();   // clears all group highlights while awaiting
-  document.getElementById('btn-check').disabled = true;
-  // Disable all answer buttons while showing feedback.
-  document.querySelectorAll('.ans-btn').forEach(btn => { btn.disabled = true; });
-
-  if (isCorrect) {
-    document.getElementById('btn-next').classList.remove('hidden');
-    // Auto-advance to next question after 2 s.
-    nextTimer = setTimeout(nextQuestion, 2000);
-  } else {
-    // Wrong: reset the same question so the user can try again.
-    nextTimer = setTimeout(() => {
-      awaitingNext = false;
-      feedbackEl.textContent = '';
-      feedbackEl.className   = '';
-      renderStaff(currentQuestion);   // re-render without red highlight
-      clearSelections();
-      document.querySelectorAll('.ans-btn:not(.locked)').forEach(btn => {
-        btn.disabled = false;
-      });
-      updateGroupHighlight();
-    }, 3000);
-  }
+  activateStep('interval');
 }
 
 // ── Event listeners ───────────────────────────────────────────────────────────
@@ -546,26 +559,22 @@ document.getElementById('btn-reset').addEventListener('click', () => {
   updateStatus();
   renderStats();
   if (isRunning) stopExercise();
-  buildIntervalButtons();
 });
-
-document.getElementById('btn-check').addEventListener('click', handleCheckAnswer);
 
 document.getElementById('btn-next').addEventListener('click', () => {
   if (nextTimer) { clearTimeout(nextTimer); nextTimer = null; }
   nextQuestion();
 });
 
-// ── Keyboard shortcuts ─────────────────────────────────────────────────────────────
+// ── Keyboard shortcuts ─────────────────────────────────────────────────────
 
 document.addEventListener('keydown', e => {
   if (!isRunning) return;
-  // Ignore if a real form field has focus.
   const tag = e.target.tagName;
   if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
 
-  // While awaiting next question: Enter or Space advances.
+  // Awaiting next: Enter or Space advances.
   if (awaitingNext) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -575,44 +584,35 @@ document.addEventListener('keydown', e => {
     return;
   }
 
-  // Enter → submit (Check).
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    if (!document.getElementById('btn-check').disabled) handleCheckAnswer();
-    return;
-  }
-
-  // Backspace → undo last selection.
-  if (e.key === 'Backspace') {
-    e.preventDefault();
-    handleKbBackspace();
-    return;
-  }
-
   const key = e.key.toLowerCase();
 
-  // Note letters: C D E F G A B.
-  if (key.length === 1 && 'cdefgab'.includes(key)) {
-    // First unset slot gets the letter; if both are set, re-select top note.
-    if (!selectedBottom) {
-      onNoteSelect('bottom', key.toUpperCase());
-    } else {
-      onNoteSelect('top', key.toUpperCase());
-    }
+  // Step 'interval': number/T keys select interval number.
+  if (currentStep === 'interval' && NUM_KEY_MAP[key]) {
+    e.preventDefault();
+    onIntervalNumberSelect(NUM_KEY_MAP[key]);
     return;
   }
 
-  // Interval keys: 1–8 for degree, T for tritone.
-  if (INTERVAL_KEY_MAP[key]) {
-    handleIntervalKey(key);
+  // Steps 'bottom' / 'top': note letter keys.
+  if ((currentStep === 'bottom' || currentStep === 'top') &&
+       key.length === 1 && 'cdefgab'.includes(key)) {
+    onNoteSelect(currentStep, key.toUpperCase());
+    return;
+  }
+
+  // Step 'quality': M = major, N = minor.
+  if (currentStep === 'quality') {
+    if (key === 'm') { onQualitySelect('major'); return; }
+    if (key === 'n') { onQualitySelect('minor'); return; }
   }
 });
 
 // ── Initialise ─────────────────────────────────────────────────────────────────────
 
 buildKeyboard();
-buildIntervalButtons();
+buildIntervalNumberButtons();
 buildNoteButtons();
+buildQualityButtons();
 updateStatus();
 renderStats();
 

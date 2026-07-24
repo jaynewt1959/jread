@@ -33,28 +33,36 @@
     <!-- ── Answer panel (hidden until running) ────────────────────────── -->
     <div id="answer-panel" class="card answer-panel hidden">
 
-      <div class="selectors-row">
+      <div class="steps-and-hints">
 
-        <div class="selector-group" id="sg-interval">
-          <div class="selector-label">Interval</div>
-          <div id="interval-buttons" class="button-grid"></div>
-        </div>
+        <!-- Sequential identification steps -->
+        <div class="steps-col">
 
-        <!-- Note selectors + odd/even hints stacked in the right column -->
-        <div class="notes-and-hints">
-
-          <div class="note-selectors-row">
-            <div class="selector-group" id="sg-bottom">
-              <div class="selector-label">Bottom Note</div>
-              <div id="bottom-buttons" class="button-grid"></div>
-            </div>
-            <div class="selector-group" id="sg-top">
-              <div class="selector-label">Top Note</div>
-              <div id="top-buttons" class="button-grid"></div>
-            </div>
+          <div class="step-section step-locked" id="step-interval">
+            <div class="step-label">① Interval</div>
+            <div id="interval-number-buttons" class="button-grid"></div>
           </div>
 
-          <!-- ── Odd / Even visual reminder ──────────────────────────────── -->
+          <div class="step-section step-locked" id="step-bottom">
+            <div class="step-label">② Bottom note</div>
+            <div id="bottom-buttons" class="button-grid"></div>
+          </div>
+
+          <div class="step-section step-locked" id="step-top">
+            <div class="step-label">③ Top note</div>
+            <div id="top-buttons" class="button-grid"></div>
+          </div>
+
+          <div class="step-section step-locked" id="step-quality" style="display:none">
+            <div class="step-label">④ Quality</div>
+            <div id="quality-buttons" class="button-grid"></div>
+          </div>
+
+        </div>
+
+        <!-- Hints column -->
+        <div class="hints-col">
+
           <div class="hint-row">
 
             <div class="hint-card hint-odd">
@@ -88,11 +96,10 @@
 
           </div>
 
-          <!-- ── Major / minor algorithm reminder ──────────────────────── -->
           <ol class="interval-algo">
             <li>Read the shape → get the interval number.</li>
             <li>2, 3, 6, 7 → do the major-scale check.</li>
-            <li>4, 5, unison, octave → stop (it's perfect).</li>
+            <li>4, 5, unison, octave → stop (it’s perfect).</li>
           </ol>
 
         </div>
@@ -100,18 +107,17 @@
       </div>
 
       <div class="kb-guide">
-        <kbd>1</kbd>–<kbd>8</kbd> <kbd>T</kbd> = interval (repeat to cycle)
+        <kbd>1</kbd>–<kbd>8</kbd> <kbd>T</kbd> = interval
         &nbsp;·&nbsp;
         <kbd>C</kbd>–<kbd>B</kbd> = notes
         &nbsp;·&nbsp;
-        <kbd>↵</kbd> = check
+        <kbd>M</kbd> = major &nbsp;<kbd>N</kbd> = minor
         &nbsp;·&nbsp;
-        <kbd>⌫</kbd> = undo
+        <kbd>↵</kbd> / <kbd>Space</kbd> = next
       </div>
 
       <div class="action-bar">
-        <button id="btn-check" class="btn-check" disabled>Check</button>
-        <button id="btn-next"  class="btn-next hidden">Next →</button>
+        <button id="btn-next" class="btn-next hidden">Next →</button>
         <div id="feedback"></div>
       </div>
 
