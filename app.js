@@ -8,10 +8,15 @@ let isRunning       = false;
 let currentQuestion = null;
 let lastQuestion    = null;
 let currentStep     = 'interval'; // 'interval' | 'bottom' | 'top' | 'quality'
+let questionMode    = 'step';     // 'step' | 'flashcard'
 let questionWrong   = false;      // any mistake on any step → wrong for scoring
 let awaitingNext    = false;
 let nextTimer       = null;
 let toastTimer      = null;
+
+// Flash-card mode: 6 buttons (1 correct + 5 distractors).
+// Activates per-interval when mastered AND ≥56 active intervals exist.
+const FLASHCARD_CHOICES = 6;
 
 // ── Canvas size ───────────────────────────────────────────────────────────────
 
@@ -129,6 +134,67 @@ function clearKeyHighlights() {
     const el = document.getElementById('key-' + note);
     if (el) el.classList.remove('key-active');
   });
+}
+
+// ── Flash-card helpers ─────────────────────────────────────────────────────
+
+function shouldUseFlashcard(intervalId) {
+  const activeIds = getActiveIntervalIds(progress.stageIndex);
+  return activeIds.length >= FLASHCARD_CHOICES
+    && progress.stats[intervalId]
+    && progress.stats[intervalId].streak >= MASTERY_STREAK;
+}
+
+function buildFlashcardButtons() {
+  const container  = document.getElementById('flashcard-buttons');
+  container.innerHTML = '';
+  const correctId  = currentQuestion.intervalId;
+  const activeIds  = getActiveIntervalIds(progress.stageIndex);
+
+  // Distractors: active intervals first, then fill from full list.
+  const pool = INTERVALS
+    .filter(iv => iv.id !== correctId)
+    .sort((a, b) => {
+      const aActive = activeIds.includes(a.id) ? 0 : 1;
+      const bActive = activeIds.includes(b.id) ? 0 : 1;
+      return aActive - bActive;
+    });
+
+  const choices = [
+    { id: correctId, name: getInterval(correctId).name },
+    ...pool.slice(0, FLASHCARD_CHOICES - 1).map(iv => ({ id: iv.id, name: iv.name })),
+  ];
+
+  // Fisher-Yates shuffle.
+  for (let i = choices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [choices[i], choices[j]] = [choices[j], choices[i]];
+  }
+
+  choices.forEach(({ id, name }) => {
+    const btn = document.createElement('button');
+    btn.className    = 'ans-btn flashcard-btn';
+    btn.dataset.id   = id;
+    btn.textContent  = name;
+    btn.addEventListener('click', () => onFlashcardSelect(id));
+    container.appendChild(btn);
+  });
+}
+
+function onFlashcardSelect(intervalId) {
+  if (awaitingNext || !currentQuestion) return;
+  if (intervalId === currentQuestion.intervalId) {
+    playClick();
+    document.querySelectorAll('.flashcard-btn').forEach(btn => {
+      if (btn.dataset.id === intervalId) btn.classList.add('btn-confirmed');
+      btn.disabled = true;
+    });
+    completeQuestion();
+  } else {
+    if (!questionWrong) { questionWrong = true; playIncorrect(); }
+    flashWrongBtn('flashcard-buttons', 'id', intervalId);
+    setFeedback('Not quite — try again', 'feedback-wrong');
+  }
 }
 
 // ── Button builders ───────────────────────────────────────────────────────────────
@@ -325,13 +391,13 @@ function renderStaff(question, color) {
   const container = document.getElementById('grand-staff');
   container.innerHTML = '';
   try {
-    const treble = buildTrebleScore(question.bottom, question.top, question.intervalId);
+    const score = buildStaffScore(question.bottom, question.top, question.intervalId);
     const gs = new GrandStaff('grand-staff', {
       width:         CANVAS_W,
       height:        CANVAS_H,
-      keySignature:  'C',
+      keySignature:  STAFF_CONFIG.keySignature,
       timeSignature: '4/4',
-    }).addMeasure(treble, 'C3/w/r');
+    }).addMeasure(score, 'C3/w/r');
 
     if (color) gs.colorNote('treble', 0, 0, color);
     gs.draw();
@@ -517,8 +583,11 @@ function stopExercise() {
   awaitingNext = false;
 
   document.getElementById('btn-start-stop').textContent = 'Start';
-  document.getElementById('answer-panel').classList.add('hidden');
+  const panel = document.getElementById('answer-panel');
+  panel.classList.add('hidden');
+  panel.classList.remove('mode-step', 'mode-flashcard');
   document.getElementById('btn-next').classList.add('hidden');
+  document.getElementById('btn-replay').classList.add('hidden');
   setFeedback('', '');
   document.getElementById('staff-placeholder').style.display = '';
   document.getElementById('grand-staff').innerHTML = '';
@@ -544,7 +613,22 @@ function nextQuestion() {
 
   renderStaff(currentQuestion);
   highlightKeys(currentQuestion.bottom, currentQuestion.top);
-  activateStep('interval');
+
+  // Determine step vs flash-card mode.
+  questionMode = shouldUseFlashcard(currentQuestion.intervalId) ? 'flashcard' : 'step';
+  const panel  = document.getElementById('answer-panel');
+  panel.classList.remove('mode-step', 'mode-flashcard');
+  panel.classList.add('mode-' + questionMode);
+
+  if (questionMode === 'flashcard') {
+    buildFlashcardButtons();
+  } else {
+    activateStep('interval');
+  }
+
+  // Auto-play the interval and show replay button.
+  playInterval(currentQuestion.bottom, currentQuestion.top);
+  document.getElementById('btn-replay').classList.remove('hidden');
 }
 
 // ── Event listeners ───────────────────────────────────────────────────────────
@@ -566,6 +650,10 @@ document.getElementById('btn-next').addEventListener('click', () => {
   nextQuestion();
 });
 
+document.getElementById('btn-replay').addEventListener('click', () => {
+  if (currentQuestion) playInterval(currentQuestion.bottom, currentQuestion.top);
+});
+
 // ── Keyboard shortcuts ─────────────────────────────────────────────────────
 
 document.addEventListener('keydown', e => {
@@ -585,6 +673,9 @@ document.addEventListener('keydown', e => {
   }
 
   const key = e.key.toLowerCase();
+
+  // Keyboard shortcuts are step-mode only.
+  if (questionMode === 'flashcard') return;
 
   // Step 'interval': number/T keys select interval number.
   if (currentStep === 'interval' && NUM_KEY_MAP[key]) {

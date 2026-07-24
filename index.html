@@ -24,6 +24,7 @@
 
     <!-- ── Grand staff ─────────────────────────────────────────────────── -->
     <section class="card staff-card">
+      <button id="btn-replay" class="btn-replay hidden" aria-label="Replay interval">🔊</button>
       <div id="staff-placeholder" class="placeholder-msg">
         Press <strong>Start</strong> to begin the exercise
       </div>
@@ -116,6 +117,12 @@
         <kbd>↵</kbd> / <kbd>Space</kbd> = next
       </div>
 
+      <!-- Flash-card recognition panel (shown instead of steps when interval is mastered) -->
+      <div id="flashcard-panel">
+        <div class="step-label">Identify the interval</div>
+        <div id="flashcard-buttons" class="button-grid"></div>
+      </div>
+
       <div class="action-bar">
         <button id="btn-next" class="btn-next hidden">Next →</button>
         <div id="feedback"></div>
@@ -147,7 +154,8 @@
   <!-- Correct / incorrect toast overlay -->
   <div id="toast"></div>
 
-  <!-- Load order matters: curriculum → GrandStaff → progress → exercise → app -->
+  <!-- Load order matters: config first, then curriculum → GrandStaff → progress → exercise → app -->
+  <script src="config.js"></script>
   <script src="audio.js"></script>
   <script src="curriculum.js"></script>
   <script src="GrandStaff.js"></script>

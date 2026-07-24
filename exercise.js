@@ -34,13 +34,13 @@ function midiToNote(midi) {
 // below the treble staff (middle C, C4).
 
 const VALID_PAIRS = (() => {
-  // All natural notes in the two-octave range we display (C4 to B5).
+  // All natural notes in the configured octave range (driven by STAFF_CONFIG).
   const allNaturals = [];
-  for (let oct = 4; oct <= 5; oct++) {
+  for (let oct = STAFF_CONFIG.octaveRange[0]; oct <= STAFF_CONFIG.octaveRange[1]; oct++) {
     NOTE_LETTERS.forEach(l => allNaturals.push(l + oct));
   }
 
-  const maxMidi = noteToMidi('B5');
+  const maxMidi = noteToMidi(STAFF_CONFIG.topNote);
   const pairs   = {};
 
   INTERVALS.forEach(iv => {
@@ -108,7 +108,7 @@ function generateQuestion(activeIntervalIds, lastQuestion) {
  *
  * Together these fill 4 beats of a 4/4 measure.
  */
-function buildTrebleScore(bottom, top, intervalId) {
+function buildStaffScore(bottom, top, intervalId) {
   const halfRest = ', B4/h/r';
   if (intervalId === 'P1') {
     return bottom + '/h' + halfRest;

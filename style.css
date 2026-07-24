@@ -99,6 +99,52 @@ main {
 
 .answer-panel.hidden { display: none; }
 
+/* ── Answer panel mode toggling ────────────────────────────────────────────────── */
+
+/* Default: hide both panels until a mode class is added */
+.answer-panel .steps-and-hints,
+.answer-panel #flashcard-panel { display: none; }
+
+.answer-panel.mode-step      .steps-and-hints { display: flex; }
+.answer-panel.mode-step      #flashcard-panel  { display: none; }
+.answer-panel.mode-flashcard .steps-and-hints  { display: none; }
+.answer-panel.mode-flashcard #flashcard-panel  { display: block; }
+
+/* ── Flash-card panel ───────────────────────────────────────────────────── */
+
+#flashcard-panel {
+  padding: 4px 0 8px;
+}
+
+.flashcard-btn {
+  min-width: 120px;
+  text-align: center;
+  font-size: 13px;
+  padding: 10px 14px;
+}
+
+/* ── Replay button ──────────────────────────────────────────────────────── */
+
+.staff-card {
+  position: relative;
+}
+
+.btn-replay {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 16px;
+  padding: 4px 8px;
+  color: #6b7280;
+  line-height: 1;
+  z-index: 1;
+}
+.btn-replay:hover { background: #f3f4f6; border-color: #9ca3af; }
+.btn-replay.hidden { display: none; }
+
 /* Two-column layout: steps on the left, hints on the right */
 .steps-and-hints {
   display: flex;
