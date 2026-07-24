@@ -116,24 +116,33 @@ function buildKeyboard() {
   BLACK_KEY_DEFS.forEach(({ note, left }) => {
     const key = document.createElement('div');
     key.className  = 'key black-key';
+    key.id         = 'key-' + note;   // e.g. 'key-F#4'
     key.style.left = left + 'px';
     container.appendChild(key);
   });
 }
 
+// Flat → sharp enharmonic map for keyboard lookup (key IDs use sharps only).
+const FLAT_TO_SHARP = { 'Bb': 'A#', 'Eb': 'D#', 'Ab': 'G#' };
+
+function noteToKeyId(noteStr) {
+  const letter  = noteStr.slice(0, -1);
+  const oct     = noteStr.slice(-1);
+  const keyNote = FLAT_TO_SHARP[letter] || letter;
+  return 'key-' + keyNote + oct;
+}
+
 function highlightKeys(bottom, top) {
   clearKeyHighlights();
   [bottom, top].forEach(note => {
-    const el = document.getElementById('key-' + note);
+    const el = document.getElementById(noteToKeyId(note));
     if (el) el.classList.add('key-active');
   });
 }
 
 function clearKeyHighlights() {
-  WHITE_NOTES.forEach(note => {
-    const el = document.getElementById('key-' + note);
-    if (el) el.classList.remove('key-active');
-  });
+  document.querySelectorAll('.key.key-active')
+    .forEach(el => el.classList.remove('key-active'));
 }
 
 // ── Flash-card helpers ─────────────────────────────────────────────────────
