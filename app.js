@@ -186,11 +186,11 @@ function buildFlashcardButtons() {
     [choices[i], choices[j]] = [choices[j], choices[i]];
   }
 
-  choices.forEach(({ id, name }, idx) => {
+  choices.forEach(({ id, name }) => {
     const btn = document.createElement('button');
     btn.className   = 'ans-btn flashcard-btn';
     btn.dataset.id  = id;
-    btn.innerHTML   = name + ' <span class="key-hint">' + (idx + 1) + '<\/span>';
+    btn.textContent = name;
     btn.addEventListener('click', () => onFlashcardSelect(id));
     container.appendChild(btn);
   });
@@ -689,15 +689,8 @@ document.addEventListener('keydown', e => {
 
   const key = e.key.toLowerCase();
 
-  // Flash-card mode: keys 1–6 select buttons by position.
-  if (questionMode === 'flashcard') {
-    const idx = parseInt(key, 10) - 1;
-    if (!isNaN(idx) && idx >= 0 && idx < FLASHCARD_CHOICES) {
-      const btns = document.querySelectorAll('.flashcard-btn:not(:disabled)');
-      if (btns[idx]) btns[idx].click();
-    }
-    return;
-  }
+  // Flash-card mode: click only, no keyboard shortcuts.
+  if (questionMode === 'flashcard') return;
 
   // Step 'interval': number/T keys select interval number.
   if (currentStep === 'interval' && NUM_KEY_MAP[key]) {
