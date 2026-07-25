@@ -131,10 +131,26 @@
     </div>
 
     <!-- ── Virtual piano keyboard (C4 – B5, visual reference only) ───── -->
-    <section class="card keyboard-card">
-      <div class="keyboard-label">C4 – B5 &nbsp;(reference)</div>
+    <details class="card keyboard-card" id="keyboard-panel" open>
+      <summary class="keyboard-summary">
+        <span class="keyboard-title">Keyboard</span>
+        <span class="keyboard-subtitle">C4 – B5 reference</span>
+        <span class="stats-chevron" aria-hidden="true">▾</span>
+      </summary>
       <div id="keyboard"></div>
-    </section>
+    </details>
+
+    <!-- ── Circle of fifths (collapsible) ──────────────────────────────── -->
+    <details class="card cof-card" id="cof-panel">
+      <summary class="keyboard-summary">
+        <span class="keyboard-title">Circle of Fifths</span>
+        <span class="keyboard-subtitle">key relationships &amp; signatures</span>
+        <span class="stats-chevron" aria-hidden="true">▾</span>
+      </summary>
+      <div class="cof-body">
+        <img src="circle-of-fifths.svg" alt="Circle of Fifths" class="cof-img" />
+      </div>
+    </details>
 
     <!-- ── Progress dashboard (collapsible) ───────────────────────────── -->
     <details class="card stats-card" id="stats-panel">

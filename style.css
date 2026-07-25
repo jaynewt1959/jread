@@ -379,7 +379,40 @@ button {
 .feedback-correct { color: #16a34a; }
 .feedback-wrong   { color: #dc2626; }
 
-/* ── Piano keyboard ──────────────────────────────────────────────────────── */
+/* ── Piano keyboard ──────────────────────────────────────────────────── */
+
+/* Shared collapsible summary row for keyboard + circle-of-fifths */
+.keyboard-card > summary,
+.cof-card > summary { list-style: none; }
+.keyboard-card > summary::-webkit-details-marker,
+.cof-card > summary::-webkit-details-marker { display: none; }
+
+.keyboard-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 0;
+}
+
+.keyboard-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+  flex-shrink: 0;
+}
+
+.keyboard-subtitle {
+  font-size: 12px;
+  color: #6b7280;
+  flex: 1;
+}
+
+.keyboard-card[open] .stats-chevron,
+.cof-card[open] .stats-chevron {
+  transform: rotate(-180deg);
+}
 
 .keyboard-card {
   display: flex;
@@ -388,16 +421,30 @@ button {
   gap: 10px;
 }
 
-.keyboard-label {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #9ca3af;
-  align-self: flex-start;
+.keyboard-card[open] #keyboard {
+  margin-top: 12px;
 }
 
 #keyboard { position: relative; }
+
+/* ── Circle of Fifths ──────────────────────────────────────────────── */
+
+.cof-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.cof-body {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.cof-img {
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+}
 
 .key {
   position: absolute;
